@@ -20,3 +20,16 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Fontes do design_louvor (OFL, ver assets/fonts/OFL.txt). Variáveis: o
+  # peso vem de FontVariation('wght').
+  fonts:
+    - family: Noto Sans
+      fonts:
+        - asset: assets/fonts/NotoSans.ttf
+    - family: Noto Sans Mono
+      fonts:
+        - asset: assets/fonts/NotoSansMono.ttf
+    - family: Noto Music
+      fonts:
+        - asset: assets/fonts/NotoMusic.ttf

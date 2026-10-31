@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../model/encoding.dart';
 import '../model/note.dart';
 import '../model/pitch.dart';
+import 'controls.dart';
+import 'louvor.dart';
 
 /// Tamanho do painel de baixo em 100%.
-const Size previewSize = Size(340, 104);
+const Size previewSize = Size(340, 128);
 
-/// Canto inferior esquerdo: o tom, a nota na pauta e o que ela é.
+/// Painel de baixo: o tom, a nota na pauta e o que ela é.
 class NotePreview extends StatelessWidget {
   const NotePreview({
     super.key,
@@ -22,120 +24,164 @@ class NotePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
+    final c = Louvor.of(context);
     final pitch = pitchOf(note, musicKey);
     final rest = note.digit == 0;
-    final beats = beatsOf(note);
     final text = toJianpuAscii(note);
 
-    return SizedBox.fromSize(
-      size: previewSize,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Tom: o que vale o "1".
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tom', style: theme.textTheme.labelSmall),
-                Row(
-                  children: [
-                    Text('1 = ', style: theme.textTheme.titleMedium),
-                    DropdownButton<MusicKey>(
-                      key: const Key('key-select'),
-                      value: musicKey,
-                      isDense: true,
-                      underline: const SizedBox.shrink(),
-                      focusColor: Colors.transparent,
-                      style: theme.textTheme.titleMedium,
-                      items: [
-                        for (final k in musicKeys)
-                          DropdownMenuItem(value: k, child: Text(k.label)),
-                      ],
-                      onChanged: (k) {
-                        if (k != null) onKeyChanged(k);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(width: 10),
-            SizedBox(
-              width: 96,
-              height: 90,
-              child: CustomPaint(
-                painter: StaffPainter(
-                  pitch: note.isEmpty || rest ? null : pitch,
-                  flags: note.underlines,
-                  hollow: note.side == SideMark.dash && note.underlines == 0,
-                  dotted: note.side == SideMark.dot,
-                  color: theme.colorScheme.onSurface,
-                  lineColor: muted.withValues(alpha: 0.6),
-                ),
-                child: rest
-                    ? Center(
-                        child: Text(
-                          'pausa',
-                          style: theme.textTheme.labelMedium,
-                        ),
-                      )
-                    : null,
+    return Container(
+      width: previewSize.width,
+      height: previewSize.height,
+      decoration: BoxDecoration(
+        color: c.folha,
+        border: Border(top: BorderSide(color: c.linha)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          // Tom: o que vale o "1" (`.rot` + `select.sel`).
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Tom', style: ui(t12, c.tinta2, forte: true)),
+              const SizedBox(height: 6),
+              _KeySelect(musicKey: musicKey, onChanged: onKeyChanged),
+            ],
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 84,
+            height: 96,
+            child: CustomPaint(
+              painter: StaffPainter(
+                pitch: note.isEmpty || rest ? null : pitch,
+                flags: note.underlines,
+                hollow: note.side == SideMark.dash && note.underlines == 0,
+                dotted: note.side == SideMark.dot,
+                color: c.tinta,
+                lineColor: c.linhaForte,
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              // Encolhe o texto em vez de quebrar a linha.
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            // Encolhe o texto em vez de quebrar a linha.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: note.isEmpty
+                  ? Text('Escolha um\nnúmero.', style: ui(t14, c.tinta3))
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          rest ? 'Pausa' : pitch!.name,
+                          key: const Key('pitch-name'),
+                          style: ui(t16, c.tinta, forte: true),
+                        ),
+                        if (!rest)
+                          Text(
+                            pitch!.solfege,
+                            key: const Key('pitch-solfege'),
+                            style: ui(t14, c.tinta2),
+                          ),
+                        Text(
+                          durationName(note) ?? 'Duração livre',
+                          style: ui(t12, c.tinta3),
+                        ),
+                        Text(
+                          beatsLabel(beatsOf(note)),
+                          style: ui(t12, c.tinta3),
+                        ),
+                        const SizedBox(height: 4),
+                        // `.tag-tipo`: o texto que vai para o documento.
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: c.papel2,
+                            borderRadius: BorderRadius.circular(rPadrao),
+                          ),
+                          child: Text(
+                            text,
+                            key: const Key('ascii'),
+                            style: mono(t14, c.tinta2),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// `select.sel`: folha com linha forte; o menu mostra o tom por extenso.
+class _KeySelect extends StatelessWidget {
+  const _KeySelect({required this.musicKey, required this.onChanged});
+
+  final MusicKey musicKey;
+  final ValueChanged<MusicKey> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Louvor.of(context);
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.only(left: 10, right: 4),
+      decoration: BoxDecoration(
+        color: c.folha,
+        borderRadius: BorderRadius.circular(rPadrao),
+        border: Border.all(color: c.linhaForte),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<MusicKey>(
+          key: const Key('key-select'),
+          value: musicKey,
+          focusColor: Colors.transparent,
+          dropdownColor: c.folha,
+          borderRadius: BorderRadius.circular(rMedio),
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: LvIcon(Icone.abaixo, color: c.tinta2, size: 16),
+          ),
+          style: ui(t14, c.tinta),
+          menuMaxHeight: 320,
+          selectedItemBuilder: (_) => [
+            for (final k in musicKeys)
+              Align(
                 alignment: Alignment.centerLeft,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (note.isEmpty)
-                      Text(
-                        'Escolha um número',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
-                      )
-                    else ...[
-                      Text(
-                        rest ? 'Pausa' : '${pitch!.name}  ${pitch.solfege}',
-                        key: const Key('pitch-name'),
-                        style: theme.textTheme.titleMedium,
+                child: Text('1 = ${k.label}', style: ui(t14, c.tinta)),
+              ),
+          ],
+          items: [
+            for (final k in musicKeys)
+              DropdownMenuItem(
+                value: k,
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: k.label,
+                        style: ui(t14, c.tinta, forte: true),
                       ),
-                      Text(
-                        durationName(note) ?? 'duração livre',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      Text(
-                        beatsLabel(beats),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        text,
-                        key: const Key('ascii'),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          fontFamilyFallback: const ['Consolas', 'Menlo'],
-                          color: muted,
-                        ),
+                      TextSpan(
+                        text: '  ${k.longName}',
+                        style: ui(t14, c.tinta2),
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
           ],
+          onChanged: (k) {
+            if (k != null) onChanged(k);
+          },
         ),
       ),
     );
@@ -261,19 +307,7 @@ class StaffPainter extends CustomPainter {
 
   void _text(Canvas c, String s, Offset at, double size, Color color) {
     final tp = TextPainter(
-      text: TextSpan(
-        text: s,
-        style: TextStyle(
-          fontSize: size,
-          height: 1,
-          color: color,
-          fontFamilyFallback: const [
-            'Segoe UI Symbol',
-            'Apple Symbols',
-            'Noto Music',
-          ],
-        ),
-      ),
+      text: TextSpan(text: s, style: musica(size, color)),
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(c, at);

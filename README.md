@@ -74,6 +74,12 @@ flutter run -d windows   # ou -d macos
 A digitação no programa em uso e a janela que não rouba o foco vêm do
 [Teclado Taiwanês](https://github.com/chiangctech3d/taiwanese_keyboard).
 
+## Design
+
+Segue o [design_louvor](https://github.com/chiangctech3d/design_louvor);
+veja [DESIGN.md](DESIGN.md). As fontes Noto Sans, Noto Sans Mono e Noto
+Music vêm embutidas em `assets/fonts` (licença OFL).
+
 ## Licença
 
 GPL-3.0. Veja [LICENSE](LICENSE).

@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../model/note.dart';
+import 'controls.dart';
+import 'louvor.dart';
 
 /// Tamanho da área do editor de nota em 100%.
 const Size editorSize = Size(340, 280);
@@ -10,10 +14,10 @@ const double _cx = 170;
 const double _cy = 136;
 const double _boxW = 84;
 const double _boxH = 100;
-const _move = Duration(milliseconds: 160);
+const _move = Duration(milliseconds: 200);
 
 /// A nota no centro, cercada pelas marcas que dá para colocar nela.
-/// As marcas apagadas ficam esmaecidas; as acesas, na cor principal.
+/// Marca apagada em linha forte; acesa em tinta (Outline Selection Rule).
 class NoteEditor extends StatelessWidget {
   const NoteEditor({
     super.key,
@@ -38,6 +42,41 @@ class NoteEditor extends StatelessWidget {
     final right = _cx + _boxW / 2;
     final o = note.octave;
     final u = note.underlines;
+    final move = MediaQuery.of(context).disableAnimations
+        ? Duration.zero
+        : _move;
+
+    Widget mark({
+      required String key,
+      required String tip,
+      required Offset center,
+      required Size size,
+      required bool on,
+      required VoidCallback onTap,
+      required Widget Function(Color ink, bool on) draw,
+      bool animated = false,
+    }) {
+      final rect = Rect.fromCenter(
+        center: center,
+        width: size.width,
+        height: size.height,
+      );
+      final child = _Mark(
+        key: Key(key),
+        tip: tip,
+        on: on,
+        onTap: onTap,
+        draw: draw,
+      );
+      return animated
+          ? AnimatedPositioned.fromRect(
+              duration: move,
+              curve: louvorEase,
+              rect: rect,
+              child: child,
+            )
+          : Positioned.fromRect(rect: rect, child: child);
+    }
 
     return SizedBox.fromSize(
       size: editorSize,
@@ -46,45 +85,52 @@ class NoteEditor extends StatelessWidget {
         children: [
           // Teclado numérico (canto superior esquerdo).
           Positioned(
-            left: 10,
-            top: 10,
-            child: IconButton.filledTonal(
+            left: 12,
+            top: 12,
+            child: LvButton(
               key: const Key('keypad-toggle'),
               tooltip: keypadOpen
                   ? 'Recolher teclado numérico'
                   : 'Abrir teclado numérico',
-              isSelected: keypadOpen,
+              pressionado: keypadOpen,
+              width: 34,
               onPressed: onToggleKeypad,
-              icon: const Icon(Icons.dialpad),
+              child: (fg) => LvIcon(Icone.teclado, color: fg),
             ),
           ),
 
           // Pontos de cima: o 1 fica perto do número, o 2 por fora.
-          _mark(
+          mark(
             key: 'upper-dot-2',
             tip: 'Duas oitavas acima',
             center: Offset(_cx, top - 38),
             size: const Size(32, 22),
+            on: o == 2,
             onTap: () => onChanged(note.tapUpperDot(2)),
-            child: _Dot(on: o == 2),
+            draw: (ink, on) => _Dot(ink: ink, on: on),
           ),
-          _mark(
+          mark(
             key: 'upper-dot-1',
             tip: 'Uma oitava acima',
             center: Offset(_cx, top - 16),
             size: const Size(32, 22),
+            on: o >= 1,
             onTap: () => onChanged(note.tapUpperDot(1)),
-            child: _Dot(on: o >= 1),
+            draw: (ink, on) => _Dot(ink: ink, on: on),
           ),
 
           // Ligadura (canto superior direito do número).
-          _mark(
+          mark(
             key: 'tie',
             tip: 'Ligadura com a próxima nota',
             center: Offset(right + 26, top - 18),
             size: const Size(48, 44),
+            on: note.tie,
             onTap: () => onChanged(note.tapTie()),
-            child: _Tie(on: note.tie),
+            draw: (ink, on) => CustomPaint(
+              size: const Size(40, 36),
+              painter: _TiePainter(ink, on),
+            ),
           ),
 
           // A caixa do número.
@@ -99,34 +145,36 @@ class NoteEditor extends StatelessWidget {
             ),
           ),
 
-          // Acidentes à esquerda: o escolhido desce/sobe para o meio.
-          _mark(
+          // Acidentes à esquerda: o escolhido vai para o meio.
+          mark(
             key: 'sharp',
-            tip: 'Sustenido (#)',
+            tip: 'Sustenido',
             center: Offset(
               left - 22,
-              note.accidental == Accidental.sharp ? _cy : _cy - 26,
+              note.accidental == Accidental.sharp ? _cy : _cy - 36,
             ),
-            size: const Size(30, 30),
+            size: const Size(32, 40),
+            on: note.accidental == Accidental.sharp,
             animated: true,
             onTap: () => onChanged(note.tapSharp()),
-            child: _Glyph('♯', on: note.accidental == Accidental.sharp),
+            draw: (ink, on) => Text('♯', style: musica(jpAcidente, ink)),
           ),
-          _mark(
+          mark(
             key: 'flat',
-            tip: 'Bemol (b)',
+            tip: 'Bemol',
             center: Offset(
               left - 22,
-              note.accidental == Accidental.flat ? _cy : _cy + 26,
+              note.accidental == Accidental.flat ? _cy : _cy + 36,
             ),
-            size: const Size(30, 30),
+            size: const Size(32, 40),
+            on: note.accidental == Accidental.flat,
             animated: true,
             onTap: () => onChanged(note.tapFlat()),
-            child: _Glyph('♭', on: note.accidental == Accidental.flat),
+            draw: (ink, on) => Text('♭', style: musica(jpAcidente, ink)),
           ),
 
           // À direita: traço (em cima) ou ponto (embaixo).
-          _mark(
+          mark(
             key: 'dash',
             tip: 'Traço: mais um tempo',
             center: Offset(
@@ -134,11 +182,12 @@ class NoteEditor extends StatelessWidget {
               note.side == SideMark.dash ? _cy : _cy - 26,
             ),
             size: const Size(32, 30),
+            on: note.side == SideMark.dash,
             animated: true,
             onTap: () => onChanged(note.tapDash()),
-            child: _Dash(on: note.side == SideMark.dash),
+            draw: (ink, on) => _Bar(width: 18, ink: ink, on: on),
           ),
-          _mark(
+          mark(
             key: 'dot',
             tip: 'Ponto: mais meio valor',
             center: Offset(
@@ -146,61 +195,68 @@ class NoteEditor extends StatelessWidget {
               note.side == SideMark.dot ? _cy : _cy + 26,
             ),
             size: const Size(32, 30),
+            on: note.side == SideMark.dot,
             animated: true,
             onTap: () => onChanged(note.tapDot()),
-            child: _Dot(on: note.side == SideMark.dot),
+            draw: (ink, on) => _Dot(ink: ink, on: on),
           ),
 
           // Linhas de baixo: a de cima é a colcheia; a de baixo acende as duas.
-          _mark(
+          mark(
             key: 'underline-1',
             tip: 'Uma linha: metade do tempo',
             center: Offset(_cx, bottom + 9),
             size: const Size(_boxW, 14),
+            on: u >= 1,
             onTap: () => onChanged(note.tapUnderline(1)),
-            child: _Underline(on: u >= 1),
+            draw: (ink, on) => _Bar(width: _boxW - 16, ink: ink, on: on),
           ),
-          _mark(
+          mark(
             key: 'underline-2',
             tip: 'Duas linhas: um quarto do tempo',
             center: Offset(_cx, bottom + 23),
             size: const Size(_boxW, 14),
+            on: u == 2,
             onTap: () => onChanged(note.tapUnderline(2)),
-            child: _Underline(on: u == 2),
+            draw: (ink, on) => _Bar(width: _boxW - 16, ink: ink, on: on),
           ),
 
           // Pontos de baixo, espelhados: o 1 perto das linhas, o 2 por fora.
-          _mark(
+          mark(
             key: 'lower-dot-1',
             tip: 'Uma oitava abaixo',
             center: Offset(_cx, bottom + 44),
             size: const Size(32, 22),
+            on: o <= -1,
             onTap: () => onChanged(note.tapLowerDot(1)),
-            child: _Dot(on: o <= -1),
+            draw: (ink, on) => _Dot(ink: ink, on: on),
           ),
-          _mark(
+          mark(
             key: 'lower-dot-2',
             tip: 'Duas oitavas abaixo',
             center: Offset(_cx, bottom + 66),
             size: const Size(32, 22),
+            on: o == -2,
             onTap: () => onChanged(note.tapLowerDot(2)),
-            child: _Dot(on: o == -2),
+            draw: (ink, on) => _Dot(ink: ink, on: on),
           ),
 
           // Enter (canto inferior direito do número).
           Positioned(
-            left: right + 16,
-            top: bottom + 18,
-            child: FilledButton(
+            left: right + 10,
+            top: bottom + 22,
+            child: LvButton(
               key: const Key('enter'),
+              primario: true,
+              tooltip: 'Escrever a nota no documento e limpar',
               onPressed: note.isEmpty ? null : onEnter,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(72, 48),
-                padding: EdgeInsets.zero,
-              ),
-              child: const Tooltip(
-                message: 'Escrever a nota e limpar',
-                child: Icon(Icons.keyboard_return, size: 26),
+              child: (fg) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Escrever', style: ui(t14, fg)),
+                  const SizedBox(width: 8),
+                  LvIcon(Icone.enter, color: fg),
+                ],
               ),
             ),
           ),
@@ -208,54 +264,54 @@ class NoteEditor extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _mark({
-    required String key,
-    required String tip,
-    required Offset center,
-    required Size size,
-    required VoidCallback onTap,
-    required Widget child,
-    bool animated = false,
-  }) {
-    final content = Tooltip(
-      message: tip,
-      waitDuration: const Duration(milliseconds: 600),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          key: Key(key),
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: Center(child: child),
+/// Uma marca clicável: apagada em linha forte, tinta-3 sob o mouse, acesa
+/// em tinta.
+class _Mark extends StatefulWidget {
+  const _Mark({
+    super.key,
+    required this.tip,
+    required this.on,
+    required this.onTap,
+    required this.draw,
+  });
+
+  final String tip;
+  final bool on;
+  final VoidCallback onTap;
+  final Widget Function(Color ink, bool on) draw;
+
+  @override
+  State<_Mark> createState() => _MarkState();
+}
+
+class _MarkState extends State<_Mark> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Louvor.of(context);
+    final ink = widget.on ? c.tinta : (_hover ? c.tinta3 : c.linhaForte);
+    return Semantics(
+      button: true,
+      toggled: widget.on,
+      label: widget.tip,
+      child: Tooltip(
+        message: widget.tip,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hover = true),
+          onExit: (_) => setState(() => _hover = false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: Center(child: widget.draw(ink, widget.on)),
+          ),
         ),
       ),
     );
-    final l = center.dx - size.width / 2;
-    final t = center.dy - size.height / 2;
-    return animated
-        ? AnimatedPositioned(
-            duration: _move,
-            curve: Curves.easeOutCubic,
-            left: l,
-            top: t,
-            width: size.width,
-            height: size.height,
-            child: content,
-          )
-        : Positioned(
-            left: l,
-            top: t,
-            width: size.width,
-            height: size.height,
-            child: content,
-          );
   }
-}
-
-Color _ink(BuildContext context, bool on) {
-  final scheme = Theme.of(context).colorScheme;
-  return on ? scheme.primary : scheme.onSurface.withValues(alpha: 0.2);
 }
 
 class _NumberBox extends StatelessWidget {
@@ -266,30 +322,31 @@ class _NumberBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final c = Louvor.of(context);
+    final digit = this.digit;
     return MouseRegion(
       cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: scheme.outlineVariant),
+            color: c.folha,
+            borderRadius: BorderRadius.circular(rPadrao),
+            border: Border.all(color: c.linhaForte),
           ),
           child: Center(
-            child: Text(
-              digit?.toString() ?? '',
-              key: const Key('digit'),
-              style: TextStyle(
-                fontSize: 68,
-                height: 1,
-                fontWeight: FontWeight.w500,
-                color: digit == null
-                    ? scheme.onSurface.withValues(alpha: 0.2)
-                    : scheme.onSurface,
-              ),
-            ),
+            child: digit == null
+                ? Text(
+                    '1–7\nou 0',
+                    key: const Key('digit-empty'),
+                    textAlign: TextAlign.center,
+                    style: ui(t14, c.tinta3),
+                  )
+                : Text(
+                    '$digit',
+                    key: const Key('digit'),
+                    style: mono(jpNota, c.tinta, peso: 500).copyWith(height: 1),
+                  ),
           ),
         ),
       ),
@@ -297,111 +354,61 @@ class _NumberBox extends StatelessWidget {
   }
 }
 
-/// Ponto; aceso ganha um anel em volta.
+/// Ponto; aceso ganha um anel de tinta.
 class _Dot extends StatelessWidget {
-  const _Dot({required this.on});
+  const _Dot({required this.ink, required this.on});
 
-  final bool on;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _ink(context, on);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 120),
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: on ? color.withValues(alpha: 0.6) : Colors.transparent,
-          width: 1.5,
-        ),
-      ),
-      child: Center(
-        child: Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-      ),
-    );
-  }
-}
-
-class _Underline extends StatelessWidget {
-  const _Underline({required this.on});
-
+  final Color ink;
   final bool on;
 
   @override
   Widget build(BuildContext context) => Container(
-    width: _boxW - 16,
-    height: 3,
+    width: 20,
+    height: 20,
     decoration: BoxDecoration(
-      color: _ink(context, on),
-      borderRadius: BorderRadius.circular(2),
+      shape: BoxShape.circle,
+      border: on ? Border.all(color: ink, width: 1.5) : null,
+    ),
+    alignment: Alignment.center,
+    child: Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: ink, shape: BoxShape.circle),
     ),
   );
 }
 
-class _Dash extends StatelessWidget {
-  const _Dash({required this.on});
+/// Linha de duração ou traço: acesa também fica mais grossa.
+class _Bar extends StatelessWidget {
+  const _Bar({required this.width, required this.ink, required this.on});
 
+  final double width;
+  final Color ink;
   final bool on;
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 18,
-    height: 3,
+    width: width,
+    height: on ? 3 : 2,
     decoration: BoxDecoration(
-      color: _ink(context, on),
-      borderRadius: BorderRadius.circular(2),
-    ),
-  );
-}
-
-class _Glyph extends StatelessWidget {
-  const _Glyph(this.text, {required this.on});
-
-  final String text;
-  final bool on;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: TextStyle(
-      fontSize: 24,
-      height: 1,
-      fontWeight: FontWeight.w600,
-      fontFamilyFallback: const ['Segoe UI Symbol', 'Apple Symbols'],
-      color: _ink(context, on),
+      color: ink,
+      borderRadius: BorderRadius.circular(1.5),
     ),
   );
 }
 
 /// Um quarto de arco: firme perto do número, pontilhado na outra ponta.
-class _Tie extends StatelessWidget {
-  const _Tie({required this.on});
-
-  final bool on;
-
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    size: const Size(40, 36),
-    painter: _TiePainter(_ink(context, on)),
-  );
-}
-
 class _TiePainter extends CustomPainter {
-  _TiePainter(this.color);
+  _TiePainter(this.color, this.on);
 
   final Color color;
+  final bool on;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 2.5
+      ..strokeWidth = on ? 2.5 : 1.75
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     // Arco de 90° com centro no canto inferior direito: começa embaixo à
@@ -410,20 +417,19 @@ class _TiePainter extends CustomPainter {
       center: Offset(size.width, size.height),
       radius: size.width - 4,
     );
-    const start = 3.14159265; // 180°
-    const sweep = 3.14159265 / 2;
+    const start = math.pi;
+    const sweep = math.pi / 2;
     const solid = 0.5;
     canvas.drawArc(rect, start, sweep * solid, false, paint);
-    // Metade final em pontos.
     const dots = 4;
     final dotPaint = Paint()..color = color;
     for (var i = 1; i <= dots; i++) {
       final a = start + sweep * (solid + (1 - solid) * i / dots);
       final p = rect.center + Offset.fromDirection(a, rect.width / 2);
-      canvas.drawCircle(p, 1.4, dotPaint);
+      canvas.drawCircle(p, on ? 1.4 : 1.1, dotPaint);
     }
   }
 
   @override
-  bool shouldRepaint(_TiePainter old) => old.color != color;
+  bool shouldRepaint(_TiePainter old) => old.color != color || old.on != on;
 }

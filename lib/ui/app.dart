@@ -7,6 +7,7 @@ import '../typing/clipboard_fallback.dart';
 import '../typing/typer.dart';
 import '../window/window_sizer.dart';
 import 'keypad.dart';
+import 'louvor.dart';
 import 'note_editor.dart';
 import 'note_preview.dart';
 
@@ -15,9 +16,6 @@ Size contentSize({required bool keypadOpen}) => Size(
   editorSize.width + (keypadOpen ? keypadWidth : 0),
   editorSize.height + previewSize.height,
 );
-
-/// Fontes com ♯ ♭ 𝄪 𝄫 𝄞 𝄢 em cada sistema.
-const _symbols = ['Segoe UI Symbol', 'Apple Symbols', 'Noto Music'];
 
 class JianpuApp extends StatelessWidget {
   const JianpuApp({
@@ -39,16 +37,11 @@ class JianpuApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF2E7D6B);
     return MaterialApp(
       title: 'Teclado Jianpu',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: seed, fontFamilyFallback: _symbols),
-      darkTheme: ThemeData(
-        colorSchemeSeed: seed,
-        brightness: Brightness.dark,
-        fontFamilyFallback: _symbols,
-      ),
+      theme: louvorTheme(Brightness.light),
+      darkTheme: louvorTheme(Brightness.dark),
       home: _Home(
         typer: typer,
         isMac: isMac,
@@ -124,6 +117,7 @@ class _HomeState extends State<_Home> {
               children: [
                 if (_keypadOpen)
                   Keypad(
+                    digit: _note.digit,
                     onDigit: (d) => setState(() => _note = _note.withDigit(d)),
                     onClear: () => setState(() => _note = const Note()),
                   ),

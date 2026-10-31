@@ -24,8 +24,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  String digitText(WidgetTester tester) =>
-      tester.widget<Text>(find.byKey(const Key('digit'))).data!;
+  String? digitText(WidgetTester tester) {
+    final f = find.byKey(const Key('digit'));
+    return f.evaluate().isEmpty ? null : tester.widget<Text>(f).data;
+  }
 
   testWidgets('monta a nota, digita e limpa', (tester) async {
     final typer = FakeTyper();
@@ -42,11 +44,13 @@ void main() {
     await tap(tester, 'upper-dot-1');
     await tap(tester, 'underline-2');
     expect(find.text("#4'//"), findsOneWidget);
-    expect(find.text('F♯5  Fá♯'), findsOneWidget);
+    expect(find.text('F♯5'), findsOneWidget);
+    expect(find.text('Fá sustenido'), findsOneWidget);
 
     await tap(tester, 'enter');
     expect(typer.typed, ["#4'//"]);
-    expect(digitText(tester), '');
+    expect(digitText(tester), isNull);
+    expect(find.byKey(const Key('digit-empty')), findsOneWidget);
     expect(find.byKey(const Key('ascii')), findsNothing);
 
     await tap(tester, 'keypad-toggle');
@@ -65,11 +69,13 @@ void main() {
     await tester.pumpWidget(JianpuApp(typer: FakeTyper(), isMac: false));
     await tap(tester, 'keypad-toggle');
     await tap(tester, 'pad-1');
-    expect(find.text('C4  Dó'), findsOneWidget);
+    expect(find.text('C4'), findsOneWidget);
+    expect(find.text('Dó'), findsOneWidget);
     await tap(tester, 'key-select');
-    await tester.tap(find.text('G').last);
+    await tester.tap(find.textContaining('Ré maior', findRichText: true).last);
     await tester.pumpAndSettle();
-    expect(find.text('G4  Sol'), findsOneWidget);
+    expect(find.text('D4'), findsOneWidget);
+    expect(find.text('1 = D'), findsOneWidget);
   });
 
   testWidgets('sem digitação copia e avisa (Mac oferece Permitir)', (

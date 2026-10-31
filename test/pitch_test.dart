@@ -34,6 +34,9 @@ void main() {
       'F𝄪5',
     );
     expect(pitchOf(const Note(digit: 3), key('C'))!.solfege, 'Mi');
+    expect(pitchOf(const Note(digit: 7), key('G'))!.solfege, 'Fá sustenido');
+    expect(key('D♭').longName, 'Ré bemol maior');
+    expect(key('C').longName, 'Dó maior');
   });
 
   test('pausa não tem altura', () {

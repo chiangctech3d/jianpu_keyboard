@@ -12,6 +12,10 @@ class MusicKey {
 
   /// Semitons acima de C.
   final int semitone;
+
+  /// Tom por extenso, ex.: `Ré bemol maior`.
+  String get longName =>
+      '${Pitch(letter, 4, semitone - _majorScale[letter]).solfege} maior';
 }
 
 const musicKeys = [
@@ -32,6 +36,12 @@ const musicKeys = [
 const _majorScale = [0, 2, 4, 5, 7, 9, 11];
 const _letterNames = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const _solfege = ['Dó', 'Ré', 'Mi', 'Fá', 'Sol', 'Lá', 'Si'];
+const _accidentalWords = {
+  -2: 'dobrado bemol',
+  -1: 'bemol',
+  1: 'sustenido',
+  2: 'dobrado sustenido',
+};
 const _accidentalSigns = {-2: '𝄫', -1: '♭', 0: '', 1: '♯', 2: '𝄪'};
 
 /// Altura de uma nota escrita, já com a grafia certa para o tom.
@@ -55,8 +65,8 @@ class Pitch {
   /// Ex.: `F♯4`.
   String get name => '${_letterNames[letter]}$accidentalSign$octave';
 
-  /// Ex.: `Fá♯`.
-  String get solfege => '${_solfege[letter]}$accidentalSign';
+  /// Por extenso, ex.: `Fá sustenido`.
+  String get solfege => [_solfege[letter], ?_accidentalWords[alter]].join(' ');
 }
 
 /// Altura da nota no tom [key]; `null` para pausa ou nota vazia.
