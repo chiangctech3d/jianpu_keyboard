@@ -1,64 +1,129 @@
 # Teclado Jianpu
 
-Janela flutuante para escrever partituras em **jianpu** (notação numérica).
-Você monta a nota clicando nas marcas em volta do número e, no **Enter**, ela
-é **digitada no programa que você estava usando**, no formato de texto da
-fonte [Jianpu ASCII](https://github.com/RobertWinslow/jianpu-ascii-font).
-A janela fica sempre por cima e não rouba o foco.
+Escreva partituras em **jianpu** (a partitura de números, muito usada na Ásia)
+sem precisar decorar nenhum código.
+
+Você monta cada nota clicando nela como ela aparece no papel: pontinhos em
+cima ou embaixo, linhas embaixo, sustenido ou bemol do lado. Depois aperta
+**Escrever**, e a nota aparece no programa onde você está escrevendo (Word,
+Google Docs, Bloco de Notas…).
+
+Funciona no **Windows** e no **Mac**. É grátis.
+
+## O que é jianpu?
+
+No jianpu, cada nota é um número:
+
+| Número | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 0 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Nota | Dó | Ré | Mi | Fá | Sol | Lá | Si | pausa |
+
+Os sinais em volta do número mudam a nota:
+
+- **Ponto em cima** → uma oitava mais aguda (dois pontos: duas oitavas).
+- **Ponto embaixo** → uma oitava mais grave.
+- **Linha embaixo** → a nota dura metade (colcheia). Duas linhas: um quarto
+  (semicolcheia).
+- **Ponto do lado** → a nota dura mais a metade dela.
+- **Traço do lado** → a nota dura mais um tempo.
+- **♯ ou ♭** antes do número → sustenido ou bemol.
+
+## Como baixar
+
+Vá em [**Releases**](../../releases/latest) e baixe o arquivo do seu sistema.
+
+### Windows
+
+1. Baixe `teclado-jianpu-windows.zip`.
+2. Clique com o botão direito no arquivo → **Extrair tudo**.
+3. Abra `jianpu_keyboard.exe`.
+
+Se aparecer um aviso azul do Windows ("O Windows protegeu o computador"),
+clique em **Mais informações → Executar assim mesmo**. O aviso aparece porque
+o app é novo e ainda não é conhecido pela Microsoft.
+
+### Mac
+
+1. Baixe `teclado-jianpu-macos.dmg` e abra.
+2. Arraste o **Teclado Jianpu** para a pasta **Aplicativos**.
+3. Na primeira vez, o Mac vai bloquear. Vá em **Ajustes do Sistema →
+   Privacidade e Segurança** e clique em **Abrir Mesmo Assim**.
+4. Ainda em **Privacidade e Segurança → Acessibilidade**, ligue o
+   **Teclado Jianpu**. É isso que deixa o app escrever no seu documento.
+
+Sem a permissão de Acessibilidade o app ainda funciona: ele copia a nota e
+você cola com **⌘V**.
 
 ## Como usar
 
-No centro fica a caixa do número; em volta, o que dá para colocar nele.
-O que está aceso fica na cor verde; o resto, esmaecido.
+1. Abra o documento onde vai escrever e clique nele (o cursor fica lá).
+2. No Teclado Jianpu, clique no botão do canto de cima à esquerda para
+   abrir o **teclado numérico** e escolha o número.
+3. Clique nas marcas em volta do número. A marca escolhida fica escura;
+   clicar nela de novo desmarca.
+4. Confira embaixo: a nota aparece na pauta, com o nome dela e quanto tempo
+   dura.
+5. Clique em **Escrever**. A nota vai para o seu documento e o teclado fica
+   limpo para a próxima.
 
-| Onde | O quê | Regra |
-| --- | --- | --- |
-| Canto superior esquerdo | Teclado numérico | Abre à esquerda (1–7, 0 = pausa, apagar). Clicar de novo recolhe. Clicar na caixa vazia também abre. |
-| Em cima | Pontos de oitava acima | O de perto acende um ponto; o de fora acende os dois. Com os dois acesos, o de perto deixa só ele. Clicar no que está aceso apaga. Acender aqui apaga os de baixo. |
-| Embaixo | Duas linhas | A de cima acende uma (colcheia); a de baixo acende as duas (semicolcheia). Mesma regra de apagar. |
-| Embaixo das linhas | Pontos de oitava abaixo | Iguais aos de cima, espelhados. Acender aqui apaga os de cima. |
-| Direita | Traço (em cima) ou ponto (embaixo) | Um ou outro; o escolhido vai para a altura do meio do número. O ponto apaga as duas linhas. Clicar de novo apaga. |
-| Esquerda | ♯ ou ♭ | Um ou outro; o escolhido vai para o meio. Clicar de novo apaga. |
-| Canto superior direito do número | Ligadura | Um quarto de arco: firme perto do número, pontilhado na ponta. |
-| Canto inferior direito do número | Enter | Digita a nota e limpa tudo. |
-| Embaixo, à esquerda | Tom e pauta | Escolha o tom (1 = C, 1 = G…) e veja a nota na pauta, o nome (F♯4 · Fá♯), a figura e quantos tempos. |
+A janela fica sempre por cima das outras e não tira o cursor do seu
+documento, então você pode usar o teclado do computador e o Teclado Jianpu
+ao mesmo tempo.
 
-### O que é digitado
+### Tom da música
 
-`acidente + número + oitava + linhas + ponto/traço`
+Embaixo, em **Tom**, escolha quanto vale o "1" (por exemplo, *1 = G*).
+O app passa a mostrar o nome certo de cada nota nesse tom.
 
-| Marca | Texto |
+## Para a partitura aparecer bonita no documento
+
+O app escreve a nota como texto simples, por exemplo `#4'//`. Para ver isso
+como partitura, instale a fonte gratuita
+[**Jianpu ASCII**](https://github.com/RobertWinslow/jianpu-ascii-font) e use
+essa fonte no texto.
+
+No Word, desligue as **aspas inteligentes**
+(Arquivo → Opções → Revisão de Texto → Opções de AutoCorreção → AutoFormatação
+ao Digitar). Senão o `'` vira `’` e a fonte não reconhece.
+
+<details>
+<summary>Tabela do texto que o app escreve</summary>
+
+| Na tela | Texto |
 | --- | --- |
 | ♯ / ♭ | `#` / `b` antes do número |
 | 1 / 2 pontos em cima | `'` / `''` |
 | 1 / 2 pontos embaixo | `,` / `,,` |
-| 1 / 2 linhas | `/` / `//` |
-| ponto | `.` |
-| traço | ` -` |
+| 1 / 2 linhas embaixo | `/` / `//` |
+| ponto do lado | `.` |
+| traço do lado | ` -` |
 
-Exemplos: `#4'//`, `b7,.`, `5 -`. Com a fonte Jianpu ASCII instalada no
-editor (ligaduras ligadas e aspas inteligentes desligadas no Word), o texto
-aparece como partitura.
+Exemplos: `#4'//` (Fá sustenido agudo, semicolcheia), `b7,.` (Si bemol grave,
+pontuado), `5 -` (Sol com dois tempos).
 
-**Ainda não sai no texto:** a ligadura (na fonte ela fica numa linha à parte,
-acima das notas).
+</details>
 
-## Baixar
+## Ainda não faz
 
-Na página **Releases** do repositório:
+- A **ligadura** aparece na tela, mas ainda não vai para o texto.
+- Não coloca **espaço** entre as notas sozinho. Use a barra de espaço do
+  seu teclado quando precisar.
+- **Windows:** programas abertos como administrador não aceitam a
+  digitação de outros programas.
 
-- **Windows:** `teclado-jianpu-windows.zip` → descompacte e abra
-  `jianpu_keyboard.exe`.
-- **Mac:** `teclado-jianpu-macos.dmg` → arraste para *Aplicativos*. O app não
-  é assinado pela Apple: na primeira vez, vá em **Ajustes do Sistema →
-  Privacidade e Segurança → Abrir Mesmo Assim**. Depois permita em
-  **Privacidade e Segurança → Acessibilidade**. Sem essa permissão a nota é
-  copiada e você cola com ⌘V.
+Encontrou um problema ou tem uma ideia? Abra uma
+[issue](../../issues).
 
-## Desenvolver
+## Privacidade
 
-Requisitos: Flutter (canal stable). Windows: Visual Studio 2022 com
-**Desenvolvimento para desktop com C++**. Mac: Xcode.
+O app não coleta nem envia nenhum dado. Não usa internet.
+
+---
+
+## Para desenvolvedores
+
+Feito em Flutter. Requisitos: Flutter (canal stable); no Windows, Visual
+Studio 2022 com **Desenvolvimento para desktop com C++**; no Mac, Xcode.
 
 ```bash
 flutter pub get
@@ -71,15 +136,14 @@ flutter run -d windows   # ou -d macos
 - Nome da nota, tom e duração: `lib/model/pitch.dart`
 - Tela: `lib/ui/`
 
-A digitação no programa em uso e a janela que não rouba o foco vêm do
+Para publicar uma versão: `git tag v0.2.0 && git push origin v0.2.0`. O
+GitHub Actions gera o `.zip` e o `.dmg` em **Releases**.
+
+O visual segue o [design_louvor](https://github.com/chiangctech3d/design_louvor)
+(veja [DESIGN.md](DESIGN.md)). A janela que não rouba o foco vem do
 [Teclado Taiwanês](https://github.com/chiangctech3d/taiwanese_keyboard).
-
-## Design
-
-Segue o [design_louvor](https://github.com/chiangctech3d/design_louvor);
-veja [DESIGN.md](DESIGN.md). As fontes Noto Sans, Noto Sans Mono e Noto
-Music vêm embutidas em `assets/fonts` (licença OFL).
 
 ## Licença
 
-GPL-3.0. Veja [LICENSE](LICENSE).
+Código: GPL-3.0 ([LICENSE](LICENSE)). Fontes Noto embutidas: SIL Open Font
+License ([assets/fonts/OFL.txt](assets/fonts/OFL.txt)).
