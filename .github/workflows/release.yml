@@ -1,0 +1,99 @@
+name: Release
+
+# Gera os executáveis. Numa tag v* (ex.: v1.0.0) também publica um Release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Versão
+        shell: bash
+        # Na tag v1.2.3 o app mostra 1.2.3; senão, a versão do pubspec.
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "BUILD_NAME=--build-name=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          fi
+      - run: flutter build windows --release $BUILD_NAME
+        shell: bash
+
+      # Assinatura de código (SignPath). Só roda depois de configurar as
+      # variáveis SIGNPATH_* e o segredo SIGNPATH_API_TOKEN (ver README).
+      - name: Enviar binários para assinatura
+        id: unsigned
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned
+          path: build/windows/x64/runner/Release/
+      - name: Assinar com SignPath
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          # A política de release pode exigir aprovação manual no SignPath.
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+
+      - name: Compactar
+        shell: pwsh
+        run: |
+          $dir = if (Test-Path signed) { 'signed' } else { 'build/windows/x64/runner/Release' }
+          Compress-Archive -Path "$dir/*" -DestinationPath teclado-jianpu-windows.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: teclado-jianpu-windows.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Versão
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "BUILD_NAME=--build-name=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          fi
+      - run: flutter build macos --release $BUILD_NAME
+      - name: Criar DMG
+        run: |
+          mkdir dmg
+          cp -R "build/macos/Build/Products/Release/Teclado Jianpu.app" dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname "Teclado Jianpu" -srcfolder dmg -ov -format UDZO teclado-jianpu-macos.dmg
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: teclado-jianpu-macos.dmg
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            teclado-jianpu-windows.zip
+            teclado-jianpu-macos.dmg
